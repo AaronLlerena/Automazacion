@@ -1,0 +1,54 @@
+function formatearFechaEnEspañol(fecha) {
+  var diasSemana = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
+  var meses = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+  
+  var diaSemana = diasSemana[fecha.getDay()];
+  var dia = fecha.getDate();
+  var mes = meses[fecha.getMonth()];
+  var año = fecha.getFullYear();
+  
+  return diaSemana + ' ' + dia + ' ' + mes + ' ' + año;
+}
+
+function guardarBorrador() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = ss.getActiveSheet();
+  
+  // datos del asunto
+  var valorInicial = "OC "+ hoja.getRange("E7").getValue();
+  var valorIntermedio = "- " + hoja.getRange("F10").getValue() + " - " + hoja.getRange("A11").getValue() + " " + hoja.getRange("B11").getValue() + "_" + hoja.getRange("B12").getValue();
+  var valorFinal = hoja.getRange("K2").getValue();
+  
+  // asunto estructura
+  var asunto = valorInicial + " " + valorIntermedio + " " + valorFinal;
+    
+  var destinatario = hoja.getRange("H3").getValue();
+  var cc = hoja.getRange("H4").getValue();
+
+  // Obtén el nombre de la celda F11
+  var nombre = hoja.getRange("F11").getValue();
+
+  // Obtén la fecha de despacho
+  var fechaDespacho = hoja.getRange("B14").getValue();
+
+  // Formatea la fecha de despacho en español
+  var fechaDespachoEspañol = formatearFechaEnEspañol(fechaDespacho);
+
+  var inicioCuerpo = "Buenas tardes estimada " + nombre + "," + "\n"+ "\n";
+  var palabrasIntermedias = "Envío la OC " + hoja.getRange("E7").getValue() + ", para que pueda ser despachada el día " + fechaDespachoEspañol + "\n" + "\n" + "Entregar en: " + hoja.getRange("B32").getValue() + "\n" + "Horario: 9am - 12pm, 1pm-4pm." + "\n" + "Contacto en planta: "+ "\n"+ "\n" + "Por favor, enviar por este medio la factura correspondiente y el Certificado de Calidad.";
+
+  var cuerpo = inicioCuerpo + palabrasIntermedias + "\n" + "\nErick se requiere el depósito al 50% inicial por favor.";
+
+  // Crear el borrador del correo electrónico
+  var mensaje = {
+    to: destinatario,
+    cc: cc,
+    subject: asunto,
+    body: cuerpo
+  };
+  
+  // Guardar el correo electrónico como borrador
+  var borrador = GmailApp.createDraft(mensaje.to, mensaje.subject, mensaje.body, { cc: mensaje.cc });
+  
+  // Mostrar una notificación con el enlace al borrador
+  SpreadsheetApp.getActiveSpreadsheet().toast('Borrador guardado: ' + borrador.getMessage().getId());
