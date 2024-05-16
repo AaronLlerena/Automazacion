@@ -1,0 +1,83 @@
+function crearOrdenesDeCompra() {
+  var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  var planSheet = spreadsheet.getSheetByName('PLAN');
+  var modelSheet = spreadsheet.getSheetByName('MODEL_OC');
+  var databaseSheet = spreadsheet.getSheetByName('DATABASE_PROV');
+
+  // Obtener los nombres de los proveedores únicos de la columna B de la hoja "PLAN"
+  var proveedoresUnicos = obtenerPalabrasUnicas(planSheet.getRange('B:B').getValues());
+
+  // Duplicar la hoja "MODEL_OC" para cada proveedor único
+  for (var i = 0; i < proveedoresUnicos.length; i++) {
+    var proveedor = proveedoresUnicos[i];
+    var nuevaHoja = modelSheet.copyTo(spreadsheet);
+    nuevaHoja.setName("OC_" + proveedor); // Renombrar la hoja duplicada con el nombre del proveedor
+
+    // Establecer el nombre del proveedor en la celda E11 de la hoja
+    nuevaHoja.getRange('E11').setValue(proveedor);
+
+    // Buscar el proveedor en la hoja "DATABASE_PROV"
+    var proveedorRow = buscarProveedor(databaseSheet, proveedor);
+    if (proveedorRow !== -1) {
+      // Obtener los insumos y cantidades correspondientes al proveedor de la hoja "PLAN"
+      var insumosProveedor = obtenerInsumosProveedor(planSheet, proveedor);
+      // Agregar los insumos a partir de la fila 19 de la hoja de la OC
+      for (var j = 0; j < insumosProveedor.length; j++) {
+        var insumo = insumosProveedor[j][0];
+        var cantidad = insumosProveedor[j][1];
+        var precio = obtenerPrecioInsumo(databaseSheet, proveedor, insumo);
+        nuevaHoja.insertRowAfter(18 + j); // Insertar una fila después de la fila 18 más j
+        nuevaHoja.getRange(19 + j, 3, 1, 3).setValues([[insumo, cantidad, precio]]); // Establecer los valores de los insumos, cantidades y precios
+      }
+    }
+  }
+}
+
+// Función para obtener palabras únicas de una matriz de datos
+function obtenerPalabrasUnicas(datos) {
+  var palabrasUnicas = [];
+  for (var i = 0; i < datos.length; i++) {
+    var fila = datos[i];
+    for (var j = 0; j < fila.length; j++) {
+      var palabra = fila[j];
+      if (palabra !== "" && palabrasUnicas.indexOf(palabra) === -1) {
+        palabrasUnicas.push(palabra);
+      }
+    }
+  }
+  return palabrasUnicas;
+}
+
+// Función para buscar un proveedor en la hoja "DATABASE_PROV"
+function buscarProveedor(sheet, proveedor) {
+  var data = sheet.getRange('E:E').getValues();
+  for (var i = 0; i < data.length; i++) {
+    if (data[i][0] === proveedor) {
+      return i + 1; // Se devuelve el número de fila (más 1 para compensar el índice base 0)
+    }
+  }
+  return -1; // Si no se encuentra el proveedor, se devuelve -1
+}
+
+// Función para obtener los insumos y cantidades correspondientes a un proveedor de la hoja "PLAN"
+function obtenerInsumosProveedor(sheet, proveedor) {
+  var insumos = [];
+  var data = sheet.getRange('B:F').getValues();
+  for (var i = 0; i < data.length; i++) {
+    if (data[i][0] === proveedor) {
+      insumos.push([data[i][1], data[i][5]]); // Agregar insumo y cantidad a la lista
+    }
+  }
+  return insumos;
+}
+
+// Función para obtener el precio de un insumo de un proveedor en la hoja "DATABASE_PROV"
+function obtenerPrecioInsumo(sheet, proveedor, insumo) {
+  var data = sheet.getRange('D:E').getValues();
+  for (var i = 0; i < data.length; i++) {
+    if (data[i][0] === proveedor && data[i][1] === insumo) {
+      return data[i][2]; // Devolver el precio del insumo
+    }
+  }
+  return ""; // Si no se encuentra el precio, devolver una cadena vacía
+}
